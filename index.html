@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TRAFFIC-X — Predict traffic before the road does</title>
+  <meta name="description" content="TRAFFIC-X combines vehicle counts, weather, time of day and historical congestion to forecast traffic 15, 30 and 60 minutes ahead, explain why, and recommend what to do.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- NAV -->
+<header class="nav" id="nav">
+  <a class="nav-logo" href="#city">TRAFFIC<span>-X</span></a>
+  <div class="nav-chapter" id="navChapter" aria-hidden="true"><span class="nc-num">01</span><span class="nc-name">The City</span></div>
+  <nav class="nav-links">
+    <a href="#city">Overview</a>
+    <a href="#forecast">Prediction</a>
+    <a href="#simulation">Simulation</a>
+  </nav>
+  <button class="live-toggle" id="liveToggle" aria-pressed="false" title="Start or pause the live simulation">
+    <span class="lt-label">Live</span><span class="lt-dot"></span>
+  </button>
+  <div class="nav-progress"><span id="navProgress"></span></div>
+</header>
+
+<main>
+
+<!-- 01 THE CITY -->
+<section class="hero" id="city" data-chapter="01" data-name="The City">
+  <div class="hero-scene" id="heroScene">
+    <canvas id="heroCanvas" aria-hidden="true"></canvas>
+    <div class="hero-labels" id="heroLabels" aria-hidden="true"></div>
+  </div>
+  <div class="hero-shade" aria-hidden="true"></div>
+
+  <div class="hero-content">
+    <p class="eyebrow"><span class="eb-num">01</span> Smart-city traffic intelligence · City Grid 04</p>
+    <h1 class="hero-title" aria-label="TRAFFIC-X"><span class="ht-a">TRAFFIC</span><span class="ht-b">-X</span></h1>
+    <p class="hero-sub">Predict traffic before the road does.</p>
+
+    <div class="formula" aria-label="Inputs: vehicle count, weather, time, historical pattern">
+      <div class="f-term"><span class="f-k">Vehicle count</span><span class="f-v" data-bind="heroVehicles">742 veh</span></div>
+      <span class="f-x">×</span>
+      <div class="f-term"><span class="f-k">Weather</span><span class="f-v" data-bind="heroWeather">Clear</span></div>
+      <span class="f-x">×</span>
+      <div class="f-term"><span class="f-k">Time</span><span class="f-v" data-bind="heroTime">17:42</span></div>
+      <span class="f-x">×</span>
+      <div class="f-term"><span class="f-k">Historical pattern</span><span class="f-v" data-bind="heroHist">+18% vs usual</span></div>
+    </div>
+
+    <p class="hero-copy">TRAFFIC-X reads these four signals at every monitored junction, forecasts congestion 15, 30 and 60 minutes ahead, explains the forecast, and tells operators what to change before the queue forms.</p>
+
+    <div class="hero-output">
+      <span class="ho-arrow" aria-hidden="true"></span>
+      <ol>
+        <li>Prediction</li><li>Confidence</li><li>Explanation</li><li>Action</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="hero-ticker" aria-live="polite">
+    <span class="tk-tag">Now</span>
+    <span class="tk-text" data-bind="heroTicker">Central Interchange: Heavy, rising to Severe within 30 min (89% confidence)</span>
+  </div>
+  <a class="scroll-cue" href="#signal" aria-label="Scroll to live traffic"><span></span></a>
+</section>
+
+<!-- 02 THE SIGNAL -->
+<section class="chapter signal" id="signal" data-chapter="02" data-name="The Signal">
+  <div class="wrap">
+    <div class="signal-grid">
+      <aside class="signal-side">
+        <header class="ch-head reveal">
+          <p class="eyebrow"><span class="eb-num">02</span> The Signal</p>
+          <h2 class="ch-title">See the road before it gets crowded.</h2>
+        </header>
+        <div class="loc-list reveal" id="locList" role="listbox" aria-label="Monitored locations"></div>
+
+        <div class="readout reveal">
+          <div class="ro-main">
+            <span class="ro-big"><span data-num="vehicles">742</span></span>
+            <span class="ro-unit">vehicles<br><small>last 15 min</small></span>
+          </div>
+          <div class="ro-row">
+            <span class="ro-mid"><span data-num="pressure">78</span><i>%</i></span>
+            <span class="ro-label">road pressure</span>
+          </div>
+          <div class="ro-status" data-level="heavy"><span class="dot"></span><span data-bind="levelText">Heavy traffic</span></div>
+
+          <dl class="ro-meta">
+            <div><dt>Capacity</dt><dd><span data-bind="capacity">950</span> veh / 15 min</dd></div>
+            <div><dt>Weather</dt><dd data-bind="weatherText">Clear, 24°C</dd></div>
+            <div><dt>Time</dt><dd data-bind="timeText">Fri 17:42</dd></div>
+            <div><dt>vs. history</dt><dd><span data-bind="histDelta">+18%</span> <small>(usual <span data-bind="histUsual">630</span>)</small></dd></div>
+          </dl>
+        </div>
+      </aside>
+
+      <div class="map-frame reveal">
+        <canvas id="cityMap" aria-label="City traffic map. Select a junction to inspect it." role="img"></canvas>
+        <div class="map-hud map-hud-tl">
+          <span class="mono">City Grid 04</span>
+          <span class="mono dim" data-bind="mapClock">17:42:00</span>
+        </div>
+        <div class="map-hud map-hud-tr">
+          <button class="sim-btn" id="simBtn" aria-pressed="false">
+            <span class="sb-dot"></span><span class="sb-text">Start live simulation</span>
+          </button>
+          <button class="ghost-btn" id="resetBtn" title="Reset the simulation to 17:42">Reset</button>
+        </div>
+        <div class="map-hud map-hud-bl">
+          <div class="legend">
+            <span><i class="lg free"></i>Free</span>
+            <span><i class="lg moderate"></i>Moderate</span>
+            <span><i class="lg heavy"></i>Heavy</span>
+            <span><i class="lg severe"></i>Severe</span>
+          </div>
+        </div>
+        <div class="map-hud map-hud-br mono dim">Select a junction</div>
+      </div>
+    </div>
+
+    <!-- Traffic pressure -->
+    <div class="pressure reveal" id="pressure">
+      <div class="gauge-wrap">
+        <svg class="gauge" id="gauge" viewBox="0 0 400 400" aria-hidden="true"></svg>
+        <div class="gauge-center">
+          <span class="g-label">Traffic pressure</span>
+          <span class="g-value"><span data-num="gauge">0</span><i>%</i></span>
+          <span class="g-sub"><span data-bind="gaugeVeh">742</span> / <span data-bind="gaugeCap">950</span> vehicles</span>
+        </div>
+      </div>
+      <div class="pressure-text">
+        <p class="eyebrow">Current load vs. road capacity</p>
+        <p class="pt-lead" data-bind="pressureLead">742 vehicles are using an approach built for 950. Past 87% the queue stops clearing between signal cycles.</p>
+        <div class="cap-bar" id="capBar">
+          <div class="cb-track">
+            <span class="cb-fill"></span>
+            <span class="cb-mark cb-hist"><em>Usual for this hour</em></span>
+            <span class="cb-mark cb-limit"><em>Severe threshold</em></span>
+          </div>
+          <div class="cb-scale mono"><span>0</span><span data-bind="capScale">950</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 THE FORECAST -->
+<section class="chapter forecast" id="forecast" data-chapter="03" data-name="The Forecast">
+  <div class="wrap">
+    <header class="ch-head reveal">
+      <p class="eyebrow"><span class="eb-num">03</span> The Forecast</p>
+      <h2 class="ch-title">What happens next?</h2>
+      <p class="ch-context mono" data-bind="forecastContext">Central Interchange · Eastbound Corridor · from 17:42</p>
+    </header>
+
+    <div class="timeline" id="timeline">
+      <svg class="tl-chart" id="tlChart" viewBox="0 0 1200 300" preserveAspectRatio="none" aria-hidden="true"></svg>
+      <div class="tl-cols" id="tlCols"></div>
+    </div>
+
+    <div class="reliability reveal" id="reliability">
+      <div class="rel-score">
+        <p class="eyebrow">Prediction confidence · +30 min</p>
+        <p class="rel-big"><span data-num="confidence">89</span><i>%</i></p>
+        <p class="rel-quality">Data quality <strong data-bind="quality">High</strong></p>
+      </div>
+      <div class="rel-inputs">
+        <p class="rel-hint">Inputs available. Switch one off to simulate a sensor outage.</p>
+        <ul id="inputList">
+          <li><button data-input="vehicles" aria-pressed="true"><span class="chk"></span><span class="in-name">Vehicle count</span><span class="in-src mono">312 loop detectors</span></button></li>
+          <li><button data-input="weather" aria-pressed="true"><span class="chk"></span><span class="in-name">Weather</span><span class="in-src mono">Met feed, 5 min</span></button></li>
+          <li><button data-input="time" aria-pressed="true"><span class="chk"></span><span class="in-name">Time</span><span class="in-src mono">Day type + clock</span></button></li>
+          <li><button data-input="history" aria-pressed="true"><span class="chk"></span><span class="in-name">Historical data</span><span class="in-src mono">26 weeks of counts</span></button></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 THE WHY -->
+<section class="chapter why" id="why" data-chapter="04" data-name="The Why">
+  <div class="wrap">
+    <div class="why-grid">
+      <header class="ch-head reveal">
+        <p class="eyebrow"><span class="eb-num">04</span> The Why</p>
+        <h2 class="ch-title">Why this prediction?</h2>
+        <p class="ch-lede">Every forecast shows which inputs moved it, and by how much. Operators can check the reasoning before acting on it.</p>
+      </header>
+      <div class="factors reveal" id="factors"></div>
+    </div>
+
+    <blockquote class="explain reveal">
+      <p data-bind="explanation">Traffic is expected to increase because the current vehicle load is 18% above the historical average for this time period.</p>
+    </blockquote>
+
+    <!-- Weather x Traffic -->
+    <div class="weather" id="weather">
+      <div class="wx-head reveal">
+        <p class="eyebrow">Weather × Traffic</p>
+        <h3 class="sub-title">Same road. Different sky.</h3>
+        <div class="seg" id="wxSeg" role="radiogroup" aria-label="Weather">
+          <button role="radio" data-wx="clear" aria-checked="true">Clear</button>
+          <button role="radio" data-wx="rain" aria-checked="false">Rain</button>
+          <button role="radio" data-wx="heavy" aria-checked="false">Heavy Rain</button>
+          <button role="radio" data-wx="fog" aria-checked="false">Fog</button>
+        </div>
+      </div>
+      <div class="wx-stage reveal">
+        <canvas id="wxLanes" aria-hidden="true"></canvas>
+        <div class="wx-readout">
+          <div class="wx-col">
+            <span class="mono dim">Effective capacity</span>
+            <span class="wx-num"><span data-bind="wxCap">950</span></span>
+          </div>
+          <div class="wx-col">
+            <span class="mono dim">Pressure +30 min</span>
+            <span class="wx-num"><span data-bind="wxP30">88%</span></span>
+          </div>
+          <div class="wx-col">
+            <span class="mono dim">Forecast</span>
+            <span class="wx-num wx-level" data-bind="wxLevel" data-level="severe">Severe</span>
+          </div>
+          <p class="wx-note" data-bind="wxNote">Dry road, full visibility. Capacity is unchanged.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 05 THE ANOMALY -->
+<section class="chapter anomaly" id="anomaly" data-chapter="05" data-name="The Anomaly">
+  <div class="wrap">
+    <header class="ch-head reveal">
+      <p class="eyebrow"><span class="eb-num">05</span> The Anomaly</p>
+      <h2 class="ch-title">Something doesn't match.</h2>
+      <p class="ch-lede">When live counts break from the pattern, TRAFFIC-X stops forecasting as usual and raises a signal for an operator to investigate.</p>
+    </header>
+
+    <div class="anom-board reveal" id="anomBoard">
+      <div class="anom-case mono">
+        <span>Case BR-01 / 0240</span><span>Riverside Bridge · Tue 02:40</span>
+      </div>
+      <div class="anom-compare">
+        <div class="ac-col">
+          <span class="ac-k mono">Historical expectation</span>
+          <span class="ac-v">Low traffic</span>
+          <span class="ac-n mono"><span data-bind="anomHist">53</span> vehicles / 15 min</span>
+        </div>
+        <div class="ac-vs mono">vs</div>
+        <div class="ac-col ac-obs">
+          <span class="ac-k mono">Current observation</span>
+          <span class="ac-v">Severe congestion</span>
+          <span class="ac-n mono"><span data-bind="anomObs">640</span> vehicles / 15 min</span>
+        </div>
+      </div>
+      <svg class="anom-chart" id="anomChart" viewBox="0 0 1000 220" preserveAspectRatio="none" aria-hidden="true"></svg>
+      <div class="anom-axis mono"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span></div>
+
+      <div class="anom-alert" id="anomAlert">
+        <span class="aa-mark" aria-hidden="true"></span>
+        <span class="aa-text">Anomaly detected</span>
+        <span class="aa-meta mono"><span data-bind="anomRatio">12.1×</span> the expected volume · pattern does not explain it</span>
+      </div>
+
+      <div class="anom-causes">
+        <p class="mono dim">Possible causes, unconfirmed</p>
+        <ol>
+          <li><span class="c-name">Accident</span><span class="c-check">Check camera BR-01-C2</span></li>
+          <li><span class="c-name">Road blockage</span><span class="c-check">Compare upstream detector speeds</span></li>
+          <li><span class="c-name">Unusual event</span><span class="c-check">Look up event permits for tonight</span></li>
+          <li><span class="c-name">Sensor error</span><span class="c-check">Cross-check adjacent detector BR-01-B</span></li>
+        </ol>
+        <p class="anom-note">TRAFFIC-X does not conclude that an accident happened. It flags the mismatch, holds automatic signal changes for this junction, and asks a person to verify.</p>
+      </div>
+      <button class="ghost-btn anom-replay" id="anomReplay">Replay detection</button>
+    </div>
+  </div>
+</section>
+
+<!-- 06 THE RESPONSE -->
+<section class="chapter response" id="response" data-chapter="06" data-name="The Response">
+  <div class="wrap">
+    <header class="ch-head reveal">
+      <p class="eyebrow"><span class="eb-num">06</span> The Response</p>
+      <p class="resp-k mono">Recommended action · <span data-bind="respLoc">Central Interchange</span></p>
+    </header>
+
+    <div class="resp-layout">
+    <div class="resp-main reveal">
+      <h2 class="resp-title" data-bind="actionTitle">Increase green time on Eastbound Corridor</h2>
+      <div class="resp-meta">
+        <span class="prio" data-prio="high">Priority <strong data-bind="actionPriority">High</strong></span>
+        <span class="mono dim" data-bind="actionDetail">Add 18 s of green per cycle for the next 45 minutes.</span>
+      </div>
+      <p class="resp-reason" data-bind="actionReason">Vehicle pressure is rising and the historical pattern puts the congestion peak within the next 30 minutes.</p>
+    </div>
+
+    <div class="resp-bottom reveal">
+      <div class="signal-plan" id="signalPlan">
+        <p class="eyebrow">Signal plan · 90 s cycle</p>
+        <div class="sp-row">
+          <span class="sp-k mono">Current</span>
+          <div class="sp-bar"><span class="sp-green" style="--g:42"></span><span class="sp-red"></span></div>
+          <span class="sp-v mono" data-bind="spCurrent">42 s green</span>
+        </div>
+        <div class="sp-row sp-new">
+          <span class="sp-k mono">Proposed</span>
+          <div class="sp-bar"><span class="sp-green" style="--g:42"></span><span class="sp-red"></span></div>
+          <span class="sp-v mono" data-bind="spNew">60 s green</span>
+        </div>
+        <button class="apply-btn" id="applyBtn">Apply to signal plan</button>
+        <p class="apply-note mono dim" id="applyNote" aria-live="polite"></p>
+      </div>
+      <div class="options">
+        <p class="eyebrow">Options considered</p>
+        <ul id="optionList">
+          <li data-kind="signal">Signal optimization</li>
+          <li data-kind="route">Alternate-route advisory</li>
+          <li data-kind="alert">Traffic alert</li>
+          <li data-kind="monitor">Increased monitoring</li>
+          <li data-kind="incident">Incident investigation</li>
+        </ul>
+      </div>
+    </div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 THE SIMULATION -->
+<section class="chapter simulation" id="simulation" data-chapter="07" data-name="The Simulation">
+  <div class="wrap">
+    <header class="ch-head reveal">
+      <p class="eyebrow"><span class="eb-num">07</span> The Simulation</p>
+      <h2 class="ch-title">What if the conditions change?</h2>
+      <p class="ch-context mono" data-bind="simContext">Scenario for Central Interchange</p>
+    </header>
+
+    <div class="sim-grid reveal">
+      <div class="sim-controls">
+        <div class="ctl">
+          <label for="simVehicles"><span>Vehicle count</span><output class="mono" id="simVehiclesOut">742</output></label>
+          <input type="range" id="simVehicles" min="80" max="1300" step="1" value="742">
+        </div>
+        <div class="ctl">
+          <span class="ctl-label">Rain</span>
+          <div class="seg seg-sm" id="simRain" role="radiogroup" aria-label="Rain">
+            <button role="radio" data-wx="clear" aria-checked="true">None</button>
+            <button role="radio" data-wx="rain" aria-checked="false">Light</button>
+            <button role="radio" data-wx="heavy" aria-checked="false">Heavy</button>
+          </div>
+        </div>
+        <div class="ctl">
+          <label for="simTime"><span>Time</span><output class="mono" id="simTimeOut">05:45 PM</output></label>
+          <input type="range" id="simTime" min="0" max="95" step="1" value="71">
+        </div>
+        <button class="ghost-btn" id="simSync">Match live conditions</button>
+      </div>
+
+      <div class="sim-out">
+        <div class="so-block">
+          <span class="mono dim">Predicted congestion · +30 min</span>
+          <span class="so-level" data-bind="simLevel" data-level="severe">Severe</span>
+          <span class="so-pct mono"><span data-bind="simPct">88%</span> pressure · <span data-bind="simConf">89%</span> confidence</span>
+        </div>
+        <div class="so-block">
+          <span class="mono dim">Traffic trend · next hour</span>
+          <svg class="so-spark" id="simSpark" viewBox="0 0 300 80" aria-hidden="true"></svg>
+          <span class="so-trend" data-bind="simTrend">Rising, then easing after 18:15</span>
+        </div>
+        <div class="so-block so-action">
+          <span class="mono dim">Recommended action</span>
+          <span class="so-act" data-bind="simAction">Increase green time on Eastbound Corridor</span>
+          <span class="prio" data-prio="high" id="simPrio">Priority <strong>High</strong></span>
+        </div>
+      </div>
+    </div>
+    <canvas id="simLanes" class="sim-lanes reveal" aria-hidden="true"></canvas>
+  </div>
+</section>
+
+<!-- 08 TRAFFIC-X -->
+<section class="finale" id="finale" data-chapter="08" data-name="Traffic-X">
+  <canvas id="finaleMap" aria-hidden="true"></canvas>
+  <div class="wrap finale-inner">
+    <p class="eyebrow reveal"><span class="eb-num">08</span> Traffic-X</p>
+    <h2 class="finale-title reveal">Traffic shouldn't be reactive.</h2>
+    <p class="finale-sub reveal">TRAFFIC-X predicts what comes next.</p>
+    <ol class="pillars reveal">
+      <li><span class="p-word">Predict.</span><span class="p-desc">Congestion 15, 30 and 60 minutes ahead, with a confidence on every number.</span></li>
+      <li><span class="p-word">Explain.</span><span class="p-desc">The inputs behind each forecast, in plain language.</span></li>
+      <li><span class="p-word">Respond.</span><span class="p-desc">One clear action, early enough to matter.</span></li>
+    </ol>
+    <p class="finale-foot mono">Demo build · all data simulated in the browser · Vehicle count × Weather × Time × Historical pattern</p>
+  </div>
+</section>
+
+</main>
+
+<script src="vendor/three.min.js"></script>
+<script src="js/model.js"></script>
+<script src="js/citymap.js"></script>
+<script src="js/lanes.js"></script>
+<script src="js/hero3d.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
